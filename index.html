@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Video Generator</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --bg: #08090d;
+    --panel: #11131a;
+    --panel2: #171a23;
+    --border: #292d39;
+    --text: #f5f7fb;
+    --muted: #9298a8;
+    --primary: #7c5cff;
+    --primary2: #a78bfa;
+    --danger: #ff5c7a;
+}
+
+body {
+    font-family: Inter, Arial, sans-serif;
+    background:
+        radial-gradient(circle at top left, rgba(124,92,255,.16), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(72,112,255,.10), transparent 30%),
+        var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+}
+
+button,
+input,
+textarea,
+select {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+.app {
+    min-height: 100vh;
+    display: flex;
+}
+
+/* SIDEBAR */
+
+.sidebar {
+    width: 250px;
+    border-right: 1px solid var(--border);
+    background: rgba(10,11,16,.94);
+    padding: 24px 16px;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 10;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 35px;
+    padding: 0 10px;
+}
+
+.logo-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg,#7c5cff,#a855f7);
+    font-size: 21px;
+}
+
+.logo h2 {
+    font-size: 18px;
+}
+
+.logo span {
+    color: var(--primary2);
+}
+
+.nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.nav button {
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    padding: 13px 14px;
+    border-radius: 10px;
+    text-align: left;
+}
+
+.nav button:hover,
+.nav button.active {
+    background: #1a1c26;
+    color: white;
+}
+
+.sidebar-bottom {
+    position: absolute;
+    bottom: 20px;
+    left: 16px;
+    right: 16px;
+}
+
+.api-status {
+    padding: 13px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #f59e0b;
+    margin-right: 6px;
+}
+
+/* MAIN */
+
+.main {
+    margin-left: 250px;
+    width: calc(100% - 250px);
+    padding: 30px;
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.topbar h1 {
+    font-size: 28px;
+}
+
+.topbar p {
+    color: var(--muted);
+    margin-top: 5px;
+}
+
+.badge {
+    padding: 8px 13px;
+    background: rgba(124,92,255,.12);
+    color: #b9a7ff;
+    border: 1px solid rgba(124,92,255,.3);
+    border-radius: 999px;
+    font-size: 12px;
+}
+
+/* GRID */
+
+.generator-grid {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    gap: 22px;
+}
+
+/* PANEL */
+
+.panel {
+    background: rgba(17,19,26,.88);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 20px;
+    box-shadow: 0 15px 50px rgba(0,0,0,.2);
+}
+
+.panel-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+
+.panel-title h3 {
+    font-size: 16px;
+}
+
+label {
+    display: block;
+    font-size: 13px;
+    color: #c5c9d4;
+    margin-bottom: 8px;
+}
+
+textarea,
+input,
+select {
+    width: 100%;
+    background: #0c0e14;
+    border: 1px solid var(--border);
+    color: white;
+    border-radius: 11px;
+    outline: none;
+    padding: 12px 13px;
+    transition: .2s;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 145px;
+    line-height: 1.5;
+}
+
+textarea:focus,
+input:focus,
+select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(124,92,255,.1);
+}
+
+.field {
+    margin-bottom: 17px;
+}
+
+.prompt-tools {
+    display: flex;
+    justify-content: space-between;
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 6px;
+}
+
+.options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.generate-btn {
+    width: 100%;
+    border: 0;
+    color: white;
+    padding: 14px;
+    border-radius: 12px;
+    background: linear-gradient(135deg,#7655ff,#9b5cff);
+    font-weight: 700;
+    margin-top: 4px;
+    box-shadow: 0 8px 25px rgba(124,92,255,.25);
+}
+
+.generate-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.08);
+}
+
+.generate-btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.example-prompts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 10px;
+}
+
+.example {
+    background: #191c25;
+    border: 1px solid var(--border);
+    color: #bbb;
+    padding: 7px 9px;
+    border-radius: 8px;
+    font-size: 11px;
+}
+
+/* PREVIEW */
+
+.preview-panel {
+    min-height: 550px;
+}
+
+.video-container {
+    position: relative;
+    background: #07080b;
+    border: 1px solid var(--border);
+    border-radius: 15px;
+    min-height: 450px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.video-container video {
+    width: 100%;
+    max-height: 620px;
+    object-fit: contain;
+    display: none;
+}
+
+.empty-state {
+    text-align: center;
+    max-width: 350px;
+    padding: 30px;
+}
+
+.empty-icon {
+    font-size: 55px;
+    margin-bottom: 15px;
+}
+
+.empty-state h2 {
+    font-size: 20px;
+    margin-bottom: 8px;
+}
+
+.empty-state p {
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+/* LOADING */
+
+.loading {
+    display: none;
+    text-align: center;
+    width: 80%;
+}
+
+.loader {
+    width: 55px;
+    height: 55px;
+    border: 4px solid #252834;
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: auto auto 20px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.progress {
+    height: 7px;
+    background: #22252f;
+    border-radius: 99px;
+    overflow: hidden;
+    margin-top: 15px;
+}
+
+.progress-bar {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg,#7655ff,#b16cff);
+    transition: width .5s;
+}
+
+/* RESULT ACTIONS */
+
+.video-actions {
+    display: none;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.action-btn {
+    border: 1px solid var(--border);
+    background: #171a22;
+    color: white;
+    padding: 10px 14px;
+    border-radius: 10px;
+}
+
+.action-btn:hover {
+    background: #20232e;
+}
+
+.download {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+/* HISTORY */
+
+.history {
+    margin-top: 22px;
+}
+
+.history-list {
+    display: grid;
+    grid-template-columns: repeat(4,1fr);
+    gap: 12px;
+}
+
+.history-card {
+    background: #11131a;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.history-card video {
+    width: 100%;
+    display: block;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    background: #050608;
+}
+
+.history-info {
+    padding: 10px;
+}
+
+.history-info p {
+    font-size: 12px;
+    color: #c5c9d4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* SETTINGS MODAL */
+
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    padding: 20px;
+}
+
+.modal-box {
+    background: #12141b;
+    border: 1px solid var(--border);
+    width: 100%;
+    max-width: 500px;
+    border-radius: 18px;
+    padding: 22px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.close {
+    background: transparent;
+    border: 0;
+    color: #aaa;
+    font-size: 22px;
+}
+
+.save-btn {
+    margin-top: 15px;
+    width: 100%;
+    padding: 12px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--primary);
+    color: white;
+    font-weight: bold;
+}
+
+/* MOBILE */
+
+.mobile-menu {
+    display: none;
+}
+
+@media(max-width:1000px) {
+    .generator-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .history-list {
+        grid-template-columns: repeat(2,1fr);
+    }
+}
+
+@media(max-width:700px) {
+    .sidebar {
+        transform: translateX(-100%);
+        transition: .25s;
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    .main {
+        margin-left: 0;
+        width: 100%;
+        padding: 18px;
+    }
+
+    .mobile-menu {
+        display: block;
+        background: transparent;
+        border: 0;
+        color: white;
+        font-size: 25px;
+        margin-right: 10px;
+    }
+
+    .topbar {
+        align-items: flex-start;
+    }
+
+    .topbar-left {
+        display: flex;
+    }
+
+    .topbar h1 {
+        font-size: 23px;
+    }
+
+    .badge {
+        display: none;
+    }
+
+    .video-container {
+        min-height: 300px;
+    }
+
+    .history-list {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<!-- SIDEBAR -->
+
+<aside class="sidebar" id="sidebar">
+
+    <div class="logo">
+        <div class="logo-icon">✦</div>
+        <h2>Video<span>AI</span></h2>
+    </div>
+
+    <div class="nav">
+
+        <button class="active">
+            🎬 &nbsp; Text to Video
+        </button>
+
+        <button>
+            🖼️ &nbsp; Image to Video
+        </button>
+
+        <button>
+            🎙️ &nbsp; AI Voice
+        </button>
+
+        <button>
+            🎵 &nbsp; AI Music
+        </button>
+
+        <button onclick="openSettings()">
+            ⚙️ &nbsp; Settings
+        </button>
+
+    </div>
+
+    <div class="sidebar-bottom">
+        <div class="api-status">
+            <span class="status-dot"></span>
+            API connection ready
+        </div>
+    </div>
+
+</aside>
+
+<!-- MAIN -->
+
+<main class="main">
+
+    <div class="topbar">
+
+        <div class="topbar-left">
+            <button class="mobile-menu" onclick="toggleSidebar()">☰</button>
+
+            <div>
+                <h1>AI Video Generator</h1>
+                <p>Create videos from text using AI</p>
+            </div>
+        </div>
+
+        <div class="badge">
+            ✨ Text → Video
+        </div>
+
+    </div>
+
+    <div class="generator-grid">
+
+        <!-- SETTINGS -->
+
+        <section class="panel">
+
+            <div class="panel-title">
+                <h3>Video Prompt</h3>
+                <span style="font-size:11px;color:#777">
+                    AI GENERATION
+                </span>
+            </div>
+
+            <div class="field">
+
+                <label>Describe your video</label>
+
+                <textarea
+                    id="prompt"
+                    maxlength="2000"
+                    placeholder="Example: A cinematic drone shot flying over snow-covered mountains at sunrise, golden sunlight, realistic clouds, dramatic camera movement..."
+                ></textarea>
+
+                <div class="prompt-tools">
+                    <span>Describe subject, environment, camera and style</span>
+                    <span id="counter">0 / 2000</span>
+                </div>
+
+                <div class="example-prompts">
+
+                    <button class="example"
+                    onclick="usePrompt('A futuristic city at night, flying cars moving between skyscrapers, cinematic lighting, realistic')">
+                    🌃 Futuristic City
+                    </button>
+
+                    <button class="example"
+                    onclick="usePrompt('A majestic tiger walking through a jungle during sunrise, cinematic wildlife documentary, realistic')">
+                    🐅 Wildlife
+                    </button>
+
+                    <button class="example"
+                    onclick="usePrompt('A beautiful beach at sunset with waves moving slowly, cinematic camera movement, ultra realistic')">
+                    🌅 Sunset
+                    </button>
+
+                </div>
+
+            </div>
+
+            <div class="field">
+
+                <label>Negative prompt</label>
+
+                <input
+                    id="negativePrompt"
+                    placeholder="blurry, distorted, low quality, watermark"
+                >
+
+            </div>
+
+            <div class="options">
+
+                <div class="field">
+
+                    <label>Model</label>
+
+                    <select id="model">
+                        <option value="video-model">AI Video Model</option>
+                        <option value="fast-video-model">Fast Video</option>
+                        <option value="quality-video-model">High Quality</option>
+                    </select>
+
+                </div>
+
+                <div class="field">
+
+                    <label>Duration</label>
+
+                    <select id="duration">
+                        <option value="4">4 seconds</option>
+                        <option value="6">6 seconds</option>
+                        <option value="8" selected>8 seconds</option>
+                        <option value="10">10 seconds</option>
+                    </select>
+
+                </div>
+
+                <div class="field">
+
+                    <label>Resolution</label>
+
+                    <select id="resolution">
+                        <option value="720p">720p</option>
+                        <option value="1080p" selected>1080p</option>
+                    </select>
+
+                </div>
+
+                <div class="field">
+
+                    <label>Aspect Ratio</label>
+
+                    <select id="aspect">
+                        <option value="16:9">16:9 Landscape</option>
+                        <option value="9:16">9:16 Portrait</option>
+                        <option value="1:1">1:1 Square</option>
+                    </select>
+
+                </div>
+
+            </div>
+
+            <button
+                class="generate-btn"
+                id="generateBtn"
+                onclick="generateVideo()">
+
+                ✨ Generate Video
+
+            </button>
+
+        </section>
+
+        <!-- PREVIEW -->
+
+        <section class="panel preview-panel">
+
+            <div class="panel-title">
+                <h3>Preview</h3>
+                <span id="statusText" style="color:#777;font-size:12px">
+                    Ready
+                </span>
+            </div>
+
+            <div class="video-container">
+
+                <div class="empty-state" id="emptyState">
+
+                    <div class="empty-icon">🎥</div>
+
+                    <h2>Your video will appear here</h2>
+
+                    <p>
+                        Enter a description on the left and click
+                        Generate Video to create an AI video.
+                    </p>
+
+                </div>
+
+                <div class="loading" id="loading">
+
+                    <div class="loader"></div>
+
+                    <h3>Generating your video...</h3>
+
+                    <p style="color:#888;margin-top:7px">
+                        AI is creating your video
+                    </p>
+
+                    <div class="progress">
+                        <div
+                            class="progress-bar"
+                            id="progressBar">
+                        </div>
+                    </div>
+
+                    <p
+                        id="progressText"
+                        style="color:#888;margin-top:8px">
+                        0%
+                    </p>
+
+                </div>
+
+                <video
+                    id="videoPreview"
+                    controls>
+                </video>
+
+            </div>
+
+            <div
+                class="video-actions"
+                id="videoActions">
+
+                <button
+                    class="action-btn"
+                    onclick="regenerate()">
+                    🔄 Regenerate
+                </button>
+
+                <button
+                    class="action-btn"
+                    onclick="shareVideo()">
+                    🔗 Share
+                </button>
+
+                <a
+                    id="downloadBtn"
+                    class="action-btn download"
+                    download="ai-video.mp4">
+                    ⬇ Download MP4
+                </a>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    <!-- HISTORY -->
+
+    <section class="panel history">
+
+        <div class="panel-title">
+            <h3>Recent Generations</h3>
+            <button
+                onclick="clearHistory()"
+                style="
+                    background:none;
+                    border:0;
+                    color:#888;
+                    font-size:12px;
+                ">
+                Clear
+            </button>
+        </div>
+
+        <div
+            class="history-list"
+            id="historyList">
+
+            <div style="
+                color:#777;
+                font-size:13px;
+                padding:15px 0;
+            ">
+                Your generated videos will appear here.
+            </div>
+
+        </div>
+
+    </section>
+
+</main>
+
+</div>
+
+<!-- SETTINGS MODAL -->
+
+<div class="modal" id="settingsModal">
+
+    <div class="modal-box">
+
+        <div class="modal-header">
+
+            <h3>API Settings</h3>
+
+            <button
+                class="close"
+                onclick="closeSettings()">
+                ×
+            </button>
+
+        </div>
+
+        <div class="field">
+
+            <label>Backend API URL</label>
+
+            <input
+                id="apiUrl"
+                placeholder="https://your-server.com/api/generate-video"
+            >
+
+        </div>
+
+        <p style="
+            color:#888;
+            font-size:12px;
+            line-height:1.5;
+            margin-top:10px;
+        ">
+            Keep your private AI provider API key on your server.
+            Do not place secret API keys directly inside this HTML file.
+        </p>
+
+        <button
+            class="save-btn"
+            onclick="saveSettings()">
+            Save Settings
+        </button>
+
+    </div>
+
+</div>
+
+<script>
+
+/* =========================================
+   CONFIGURATION
+========================================= */
+
+let API_URL =
+    localStorage.getItem("video_api_url") ||
+    "/api/generate-video";
+
+
+/* =========================================
+   PROMPT COUNTER
+========================================= */
+
+const promptBox = document.getElementById("prompt");
+const counter = document.getElementById("counter");
+
+promptBox.addEventListener("input", () => {
+
+    counter.textContent =
+        promptBox.value.length + " / 2000";
+
+});
+
+
+/* =========================================
+   EXAMPLE PROMPT
+========================================= */
+
+function usePrompt(text) {
+
+    promptBox.value = text;
+
+    counter.textContent =
+        text.length + " / 2000";
+
+}
+
+
+/* =========================================
+   GENERATE VIDEO
+========================================= */
+
+async function generateVideo() {
+
+    const prompt =
+        document.getElementById("prompt").value.trim();
+
+    const negativePrompt =
+        document.getElementById("negativePrompt").value.trim();
+
+    const model =
+        document.getElementById("model").value;
+
+    const duration =
+        document.getElementById("duration").value;
+
+    const resolution =
+        document.getElementById("resolution").value;
+
+    const aspect =
+        document.getElementById("aspect").value;
+
+    if (!prompt) {
+
+        alert("Please enter a video description.");
+
+        return;
+    }
+
+    const btn =
+        document.getElementById("generateBtn");
+
+    const empty =
+        document.getElementById("emptyState");
+
+    const loading =
+        document.getElementById("loading");
+
+    const video =
+        document.getElementById("videoPreview");
+
+    const actions =
+        document.getElementById("videoActions");
+
+    const status =
+        document.getElementById("statusText");
+
+    const progressBar =
+        document.getElementById("progressBar");
+
+    const progressText =
+        document.getElementById("progressText");
+
+
+    btn.disabled = true;
+
+    empty.style.display = "none";
+    video.style.display = "none";
+    actions.style.display = "none";
+    loading.style.display = "block";
+
+    status.textContent = "Generating...";
+
+    progressBar.style.width = "5%";
+    progressText.textContent = "5%";
+
+
+    /*
+       Visual progress animation.
+
+       Actual AI generation happens on your backend.
+    */
+
+    let progress = 5;
+
+    const progressTimer = setInterval(() => {
+
+        if (progress < 90) {
+
+            progress += Math.random() * 8;
+
+            if (progress > 90)
+                progress = 90;
+
+            progressBar.style.width =
+                progress + "%";
+
+            progressText.textContent =
+                Math.floor(progress) + "%";
+        }
+
+    }, 1200);
+
+
+    try {
+
+        /*
+        Your backend should accept:
+
+        {
+            prompt,
+            negativePrompt,
+            model,
+            duration,
+            resolution,
+            aspectRatio
+        }
+
+        and return:
+
+        {
+            videoUrl: "https://example.com/video.mp4"
+        }
+        */
+
+        const response = await fetch(API_URL, {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+
+                prompt: prompt,
+
+                negativePrompt:
+                    negativePrompt,
+
+                model: model,
+
+                duration:
+                    Number(duration),
+
+                resolution:
+                    resolution,
+
+                aspectRatio:
+                    aspect
+
+            })
+
+        });
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Video generation request failed."
+            );
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        if (!data.videoUrl) {
+
+            throw new Error(
+                "Server did not return videoUrl."
+            );
+
+        }
+
+
+        clearInterval(progressTimer);
+
+
+        progressBar.style.width = "100%";
+        progressText.textContent = "100%";
+
+
+        video.src = data.videoUrl;
+
+        video.style.display = "block";
+
+        loading.style.display = "none";
+
+        actions.style.display = "flex";
+
+        status.textContent = "Completed";
+
+
+        const download =
+            document.getElementById("downloadBtn");
+
+        download.href =
+            data.videoUrl;
+
+
+        addToHistory(
+            data.videoUrl,
+            prompt
+        );
+
+
+    } catch (error) {
+
+        clearInterval(progressTimer);
+
+        loading.style.display = "none";
+
+        empty.style.display = "block";
+
+        status.textContent = "Error";
+
+        alert(
+            "Could not generate video.\n\n" +
+            error.message +
+            "\n\nMake sure your backend API is configured."
+        );
+
+    } finally {
+
+        btn.disabled = false;
+
+    }
+
+}
+
+
+/* =========================================
+   REGENERATE
+========================================= */
+
+function regenerate() {
+
+    generateVideo();
+
+}
+
+
+/* =========================================
+   SHARE
+========================================= */
+
+async function shareVideo() {
+
+    const video =
+        document.getElementById("videoPreview");
+
+    if (!video.src)
+        return;
+
+    if (navigator.share) {
+
+        try {
+
+            await navigator.share({
+                title: "My AI Video",
+                text: "Generated with AI Video Generator",
+                url: video.src
+            });
+
+        } catch (e) {}
+
+    } else {
+
+        await navigator.clipboard.writeText(
+            video.src
+        );
+
+        alert("Video URL copied.");
+
+    }
+
+}
+
+
+/* =========================================
+   HISTORY
+========================================= */
+
+function addToHistory(videoUrl, prompt) {
+
+    const history =
+        JSON.parse(
+            localStorage.getItem("video_history") || "[]"
+        );
+
+    history.unshift({
+
+        url: videoUrl,
+
+        prompt: prompt,
+
+        date: new Date().toISOString()
+
+    });
+
+    if (history.length > 8)
+        history.pop();
+
+    localStorage.setItem(
+        "video_history",
+        JSON.stringify(history)
+    );
+
+    renderHistory();
+
+}
+
+
+function renderHistory() {
+
+    const history =
+        JSON.parse(
+            localStorage.getItem("video_history") || "[]"
+        );
+
+    const list =
+        document.getElementById("historyList");
+
+
+    if (!history.length) {
+
+        list.innerHTML = `
+            <div style="
+                color:#777;
+                font-size:13px;
+                padding:15px 0;
+            ">
+                Your generated videos will appear here.
+            </div>
+        `;
+
+        return;
+    }
+
+
+    list.innerHTML =
+        history.map(item => `
+
+            <div class="history-card">
+
+                <video
+                    src="${item.url}"
+                    controls
+                    preload="metadata">
+                </video>
+
+                <div class="history-info">
+
+                    <p title="${escapeHtml(item.prompt)}">
+                        ${escapeHtml(item.prompt)}
+                    </p>
+
+                </div>
+
+            </div>
+
+        `).join("");
+
+}
+
+
+function clearHistory() {
+
+    localStorage.removeItem(
+        "video_history"
+    );
+
+    renderHistory();
+
+}
+
+
+function escapeHtml(text) {
+
+    return text
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+
+}
+
+
+/* =========================================
+   SETTINGS
+========================================= */
+
+function openSettings() {
+
+    document.getElementById(
+        "apiUrl"
+    ).value = API_URL;
+
+    document.getElementById(
+        "settingsModal"
+    ).style.display = "flex";
+
+}
+
+
+function closeSettings() {
+
+    document.getElementById(
+        "settingsModal"
+    ).style.display = "none";
+
+}
+
+
+function saveSettings() {
+
+    const value =
+        document.getElementById(
+            "apiUrl"
+        ).value.trim();
+
+    if (!value) {
+
+        alert("Enter your API URL.");
+
+        return;
+    }
+
+    API_URL = value;
+
+    localStorage.setItem(
+        "video_api_url",
+        value
+    );
+
+    closeSettings();
+
+    alert("API URL saved.");
+
+}
+
+
+/* =========================================
+   MOBILE SIDEBAR
+========================================= */
+
+function toggleSidebar() {
+
+    document
+        .getElementById("sidebar")
+        .classList.toggle("open");
+
+}
+
+
+/* =========================================
+   INITIALIZE
+========================================= */
+
+renderHistory();
+
+</script>
+
+</body>
+</html>
